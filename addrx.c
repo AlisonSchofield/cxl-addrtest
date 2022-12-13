@@ -63,7 +63,7 @@ int main(int argc, char *argv[])
 		mask_upper = MY_GENMASK_ULL(51, eig + eiw);
 		bits_upper = (hpa_offset & mask_upper) >> eig + eiw;
 		bits_upper = bits_upper / 3;
-		test_offset = bits_upper << eig + 8;	
+		test_offset = bits_upper << eig + 8;
 	}
 
 	/* Lower bits don't change */
