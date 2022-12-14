@@ -84,9 +84,9 @@ int main(int argc, char *argv[])
 		test_offset |= pos << (eig + 8);
 	} else {
 		mask_upper = MY_GENMASK_ULL(51, eig + 8);
-		bits_upper = (dpa_offset & mask_upper) >> eig + 8;
+		bits_upper = (dpa_offset & mask_upper) >> (eig + 8);
 		bits_upper = bits_upper * 3;
-		test_offset = bits_upper << eig + eiw;
+		test_offset = ((bits_upper << (eiw - 8)) + pos) << (eig + 8);
 	}
 
 	/* Lower bits don't change */
