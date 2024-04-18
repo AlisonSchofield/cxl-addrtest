@@ -19,6 +19,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <limits.h>
 
 typedef uint64_t u64;
 
@@ -33,8 +34,87 @@ typedef uint64_t u64;
 	(((~(0)) - ((1) << (l)) + 1) & \
 	 (~(0) >> (MY_BITS_PER_LONG_LONG - 1 - (h))))
 
-u64 to_dpa(unsigned long long hpa_offset,
-			  uint16_t eig, uint8_t eiw)
+
+typedef uint64_t u64;
+
+int count_bits_set(u64 value) {
+    int count = 0;
+    while (value) {
+        count += value & 1;
+        value >>= 1;
+    }
+    return count;
+}
+
+u64 __restore_xor_pos(u64 hpa, u64 map)
+{
+    int n = 0;
+
+    /* Count the number of bits set in (hpa & cximsd->xormaps[i]) */
+    int bits_set = count_bits_set(hpa & map);
+
+    /* XOR of all set bits */
+    n = (bits_set & 1);
+
+    /* Find the lowest set bit in the map */
+    int lowest_bit_pos = 0;
+    while ((map & (1ULL << lowest_bit_pos)) == 0) {
+        lowest_bit_pos++;
+    }
+
+    /* Set the bit at hpa[lowest_bit_pos] to n */
+    if (n) {
+        hpa |= (1ULL << lowest_bit_pos);
+    } else {
+        hpa &= ~(1ULL << lowest_bit_pos);
+    }
+
+    return hpa;
+}
+
+u64 restore_xor_pos(u64 hpa_offset, uint8_t eiw)
+{
+	u64 temp_a, temp_b, temp_c;
+
+	switch (eiw) {
+	case 0: /* 1-way */
+	case 8: /* 3-way */
+		return hpa_offset;
+
+	case 1:
+		/* 2-way */
+		return __restore_xor_pos(hpa_offset, 0x404100);
+
+	case 2: /* 4-way */
+		temp_a = __restore_xor_pos(hpa_offset, 0x404100);
+		return __restore_xor_pos(temp_a, 0x808200);
+
+	case 3: /* 8-way */
+		temp_a = __restore_xor_pos(hpa_offset, 0x404100);
+		temp_b = __restore_xor_pos(temp_a, 0x808200);
+		return __restore_xor_pos(temp_b, 0x1010400);
+
+	case 4: /* 16-way */
+		temp_a = __restore_xor_pos(hpa_offset, 0x404100);
+		temp_b = __restore_xor_pos(temp_a, 0x808200);
+		temp_c = __restore_xor_pos(temp_b, 0x1010400);
+		return __restore_xor_pos(temp_b, 0x800);
+
+	case 9: /* 6-way */
+		return __restore_xor_pos(hpa_offset, 0x2020900);
+
+	case 10: /* 12-way */
+		temp_a = __restore_xor_pos(hpa_offset, 0x2020900);
+		return __restore_xor_pos(temp_a, 0x4041200);
+
+	default:
+		return ULLONG_MAX;
+	}
+
+	return ULLONG_MAX;
+}
+
+u64 to_dpa(unsigned long long hpa_offset, uint16_t eig, uint8_t eiw)
 {
 	u64 mask_upper, mask_lower, dpa_upper_mask;
 	u64 bits_upper, bits_lower;
@@ -71,7 +151,8 @@ void to_hpa(u64 dpa_offset, uint16_t eig, uint8_t eiw, int pos)
 	u64 mask_upper, mask_lower, dpa_upper_mask;
 	u64 bits_upper, bits_lower;
 	u64 hpa_offset, test_offset;
-	
+	u64 hpa_offset_modulo, hpa_offset_xor;
+
 	/*
 	 * Translate DPA to HPA
 	 * Reverse the above decode logic to get back to an HPA
@@ -103,8 +184,11 @@ void to_hpa(u64 dpa_offset, uint16_t eig, uint8_t eiw, int pos)
 		printf("Pass: ");
 	}
 
-	printf("dpa_offset=0x%llx eig=%u eiw=%u pos=%d hpa_offset=0x%llx\n",
-	       dpa_offset, eig, eiw, pos, hpa_offset);
+	hpa_offset_modulo = hpa_offset;
+	hpa_offset_xor = restore_xor_pos(hpa_offset, eiw);
+
+	printf("dpa_offset=0x%llx eig=%u eiw=%u pos=%d hpa_offset_modulo=0x%llx hpa_offset_xor=0x%llx\n",
+	       dpa_offset, eig, eiw, pos, hpa_offset_modulo, hpa_offset_xor);
 }
 
 int eiw_to_ways(uint8_t eiw, unsigned int *ways)
@@ -145,5 +229,3 @@ int main(int argc, char *argv[])
 				to_hpa(dpa_offset, eigs[i], eiws[j], k);
 		}
 }
-
-
