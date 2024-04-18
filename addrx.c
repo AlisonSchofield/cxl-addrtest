@@ -191,20 +191,18 @@ void to_hpa(u64 dpa_offset, uint16_t eig, uint8_t eiw, int pos)
 	       dpa_offset, eig, eiw, pos, hpa_offset_modulo, hpa_offset_xor);
 }
 
-int eiw_to_ways(uint8_t eiw, unsigned int *ways)
+int eiw_to_ways(uint8_t eiw)
 {
         switch (eiw) {
         case 0 ... 4:
-                *ways = 1 << eiw;
+                return (1 << eiw);
                 break;
         case 8 ... 10:
-                *ways = 3 << (eiw - 8);
+                return (3 << (eiw - 8));
                 break;
         default:
-                return -EINVAL;
+                return -1;
         }
-
-        return 0;
 }
 
 int main(int argc, char *argv[])
@@ -224,7 +222,7 @@ int main(int argc, char *argv[])
 
 	for (i = 0; i < nr_eigs; i++)
 		for (j = 1; j < nr_eiws; j++) {
-			eiw_to_ways(eiws[j], &ways);
+			ways = eiw_to_ways(eiws[j]);
 			for (k = 0; k < ways; k++) 
 				to_hpa(dpa_offset, eigs[i], eiws[j], k);
 		}
