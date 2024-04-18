@@ -1,11 +1,9 @@
 # cxl-addrtest
-Out of tree CXL address translation
+CXL address translation
 
-cxl/addrtest: Out of tree test for CXL address translations
+cxl/addrtest: Demonstrate CXL address translations
 
-Intends to mimic the address calculations found in the CXL kernel
-driver. Known differences, noted in the C file, relate to the
-creation of masks.
+Demonstrates DPA->HPA address calculations defined in the CXL Spec.
 
 Usage: ./addrx dpa_offset
 
@@ -18,7 +16,7 @@ All permutations of EIG EIW POS are applied to the dpa_offset to make an hpa_off
 for each EIG
 	for each EIW
 		for each POS
-			Translate dpa_offset to hpa_offset & check
+			Translate dpa_offset to hpa_offsets (modulo & xor) & check
 
 $ grep Pass your_output_file | wc -l  
 357
