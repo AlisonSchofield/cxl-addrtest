@@ -20,6 +20,8 @@
 #include <fcntl.h>
 #include <unistd.h>
 
+typedef uint64_t u64;
+
 /*
  * "MY_" macros are trying (poorly?) to mimic kernel macros.
  * Wondering what is available in user space.
@@ -31,12 +33,12 @@
 	(((~(0)) - ((1) << (l)) + 1) & \
 	 (~(0) >> (MY_BITS_PER_LONG_LONG - 1 - (h))))
 
-unsigned long long to_dpa(unsigned long long hpa_offset,
+u64 to_dpa(unsigned long long hpa_offset,
 			  uint16_t eig, uint8_t eiw)
 {
-	unsigned long long mask_upper, mask_lower, dpa_upper_mask;
-	unsigned long long bits_upper, bits_lower;
-	unsigned long long dpa_offset;
+	u64 mask_upper, mask_lower, dpa_upper_mask;
+	u64 bits_upper, bits_lower;
+	u64 dpa_offset;
 	
 	/*
 	 * Translate HPA to DPA
@@ -64,11 +66,11 @@ unsigned long long to_dpa(unsigned long long hpa_offset,
 	return dpa_offset;
 }
 
-void to_hpa(unsigned long long dpa_offset, uint16_t eig, uint8_t eiw, int pos)
+void to_hpa(u64 dpa_offset, uint16_t eig, uint8_t eiw, int pos)
 {
-	unsigned long long mask_upper, mask_lower, dpa_upper_mask;
-	unsigned long long bits_upper, bits_lower;
-	unsigned long long hpa_offset, test_offset;
+	u64 mask_upper, mask_lower, dpa_upper_mask;
+	u64 bits_upper, bits_lower;
+	u64 hpa_offset, test_offset;
 	
 	/*
 	 * Translate DPA to HPA
@@ -123,7 +125,7 @@ int eiw_to_ways(uint8_t eiw, unsigned int *ways)
 
 int main(int argc, char *argv[])
 {
-	unsigned long long dpa_offset = strtoull(argv[1], NULL, 0);
+	u64 dpa_offset = strtoull(argv[1], NULL, 0);
 	int i, j, k, ways; 
 	
 	uint8_t eiws[] = {0, 1, 2, 3, 4, 8, 9, 10};
