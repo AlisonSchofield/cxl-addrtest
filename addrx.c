@@ -48,28 +48,22 @@ int count_bits_set(u64 value) {
 
 u64 __restore_xor_pos(u64 hpa, u64 map)
 {
-    int n = 0;
+	u64 val;
+	int pos;
 
-    /* Count the number of bits set in (hpa & cximsd->xormaps[i]) */
-    int bits_set = count_bits_set(hpa & map);
+	if (!map)
+		return hpa;
 
-    /* XOR of all set bits */
-    n = (bits_set & 1);
+	/* XOR of all set bits */
+	val = (count_bits_set(hpa & map)) & 1;
 
-    /* Find the lowest set bit in the map */
-    int lowest_bit_pos = 0;
-    while ((map & (1ULL << lowest_bit_pos)) == 0) {
-        lowest_bit_pos++;
-    }
+	/* Find the lowest set bit in the map */
+	pos = ffs(map) - 1;
 
-    /* Set the bit at hpa[lowest_bit_pos] to n */
-    if (n) {
-        hpa |= (1ULL << lowest_bit_pos);
-    } else {
-        hpa &= ~(1ULL << lowest_bit_pos);
-    }
+	/* Set bit at hpa[pos] to val */
+	hpa = (hpa & ~(1ULL << pos)) | (val << pos);
 
-    return hpa;
+	return hpa;
 }
 
 u64 restore_xor_pos(u64 hpa_offset, uint8_t eiw)
@@ -187,7 +181,7 @@ void to_hpa(u64 dpa_offset, uint16_t eig, uint8_t eiw, int pos)
 	hpa_offset_modulo = hpa_offset;
 	hpa_offset_xor = restore_xor_pos(hpa_offset, eiw);
 
-	printf("dpa_offset=0x%llx eig=%u eiw=%u pos=%d hpa_offset_modulo=0x%llx hpa_offset_xor=0x%llx\n",
+	printf("dpa_offset=%llu eig=%u eiw=%u pos=%d hpa_offset_modulo=%llu hpa_offset_xor=%llu\n",
 	       dpa_offset, eig, eiw, pos, hpa_offset_modulo, hpa_offset_xor);
 }
 
